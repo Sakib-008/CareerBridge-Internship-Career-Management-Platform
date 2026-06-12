@@ -13,7 +13,7 @@ return new class extends Migration
                 APPLICATION_ID      NUMBER(10)    NOT NULL,
                 SCHEDULED_DATE      DATE          NOT NULL,
                 SCHEDULED_TIME      VARCHAR2(10)  NOT NULL,
-                MODE                VARCHAR2(20)  NOT NULL,
+                INTERVIEW_MODE      VARCHAR2(20)  NOT NULL,
                 LOCATION_OR_LINK    VARCHAR2(200) NULL,
                 NOTES               VARCHAR2(500) NULL,
                 CREATED_AT          TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
@@ -22,7 +22,7 @@ return new class extends Migration
                 CONSTRAINT FK_INTERVIEW_APP      FOREIGN KEY (APPLICATION_ID)
                     REFERENCES APPLICATIONS(APPLICATION_ID) ON DELETE CASCADE,
                 CONSTRAINT CHK_INTERVIEW_MODE    CHECK (
-                    MODE IN ('In-person','Video','Phone')
+                    INTERVIEW_MODE IN ('In-person','Video','Phone')
                 )
             )
         ");

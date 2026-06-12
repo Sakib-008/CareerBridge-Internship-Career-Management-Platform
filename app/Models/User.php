@@ -2,48 +2,51 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
+    protected $table      = 'USERS';
+    protected $primaryKey = 'USER_ID';
+    public $timestamps    = false;
+
     protected $fillable = [
-        'name',
-        'email',
-        'password',
+        'EMAIL',
+        'PASSWORD_HASH',
+        'ROLE',
+        'IS_ACTIVE',
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
+    protected $hidden = ['PASSWORD_HASH'];
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    // Override for Laravel Auth
+    public function getAuthPassword()
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->PASSWORD_HASH;
     }
+
+    // Relationships
+    public function student()
+    {
+        return $this->hasOne(Student::class, 'USER_ID', 'USER_ID');
+    }
+
+    public function company()
+    {
+        return $this->hasOne(Company::class, 'USER_ID', 'USER_ID');
+    }
+
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class, 'USER_ID', 'USER_ID');
+    }
+
+    // Role helpers
+    public function isStudent(): bool  { return $this->ROLE === 'student'; }
+    public function isCompany(): bool  { return $this->ROLE === 'company'; }
+    public function isAdmin(): bool    { return $this->ROLE === 'admin'; }
+    public function isActive(): bool   { return $this->IS_ACTIVE == 1; }
 }
