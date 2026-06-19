@@ -22,6 +22,22 @@ class User extends Authenticatable
 
     protected $hidden = ['PASSWORD_HASH'];
 
+    public function getAttribute($key)
+    {
+        $value = parent::getAttribute($key);
+
+        if ($value !== null) {
+            return $value;
+        }
+
+        $lower = strtolower($key);
+        if ($key !== $lower && array_key_exists($lower, $this->attributes)) {
+            return parent::getAttribute($lower);
+        }
+
+        return $value;
+    }
+
     // Override for Laravel Auth
     public function getAuthPassword()
     {
@@ -48,5 +64,5 @@ class User extends Authenticatable
     public function isStudent(): bool  { return $this->ROLE === 'student'; }
     public function isCompany(): bool  { return $this->ROLE === 'company'; }
     public function isAdmin(): bool    { return $this->ROLE === 'admin'; }
-    public function isActive(): bool   { return $this->IS_ACTIVE == 1; }
+    public function isActive(): bool   { return (string) $this->IS_ACTIVE === '1'; }
 }

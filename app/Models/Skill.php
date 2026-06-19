@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Models\BaseModel;
 
-class Skill extends Model
+class Skill extends BaseModel
 {
     protected $table      = 'SKILLS';
     protected $primaryKey = 'SKILL_ID';

@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Models\BaseModel;
 
-class Notification extends Model
+class Notification extends BaseModel
 {
     protected $table      = 'NOTIFICATIONS';
     protected $primaryKey = 'NOTIFICATION_ID';

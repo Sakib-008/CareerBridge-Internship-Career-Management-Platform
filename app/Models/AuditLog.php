@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Models\BaseModel;
 
-class AuditLog extends Model
+class AuditLog extends BaseModel
 {
     protected $table      = 'AUDIT_LOG';
     protected $primaryKey = 'LOG_ID';
