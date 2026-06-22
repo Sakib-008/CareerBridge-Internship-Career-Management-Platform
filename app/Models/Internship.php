@@ -28,7 +28,9 @@ class Internship extends BaseModel
             'INTERNSHIP_SKILLS',
             'INTERNSHIP_ID',
             'SKILL_ID'
-        )->withPivot('IS_MANDATORY');
+        )
+        ->using(InternshipSkillPivot::class)
+        ->withPivot('INTERNSHIP_SKILL_ID', 'IS_MANDATORY');
     }
 
     public function applications()

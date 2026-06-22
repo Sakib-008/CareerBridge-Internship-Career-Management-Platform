@@ -2,11 +2,11 @@
    class="nav-link {{ request()->routeIs('student.dashboard') ? 'active' : '' }}">
     <i class="bi bi-speedometer2 me-2"></i> Dashboard
 </a>
-<a href="#"
+<a href="{{ route('student.profile') }}"
    class="nav-link {{ request()->routeIs('student.profile*') ? 'active' : '' }}">
     <i class="bi bi-person-circle me-2"></i> My Profile
 </a>
-<a href="#"
+<a href="{{ route('student.skills') }}"
    class="nav-link {{ request()->routeIs('student.skills*') ? 'active' : '' }}">
     <i class="bi bi-stars me-2"></i> My Skills
 </a>

@@ -33,7 +33,9 @@ class Student extends BaseModel
             'STUDENT_SKILLS',
             'STUDENT_ID',
             'SKILL_ID'
-        )->withPivot('PROFICIENCY', 'ADDED_AT');
+        )
+        ->using(StudentSkillPivot::class)
+        ->withPivot('STUDENT_SKILL_ID', 'PROFICIENCY', 'ADDED_AT');
     }
 
     public function applications()
