@@ -8,6 +8,8 @@ use App\Http\Controllers\Student\StudentSkillController;
 use App\Http\Controllers\Company\CompanyDashboardController;
 use App\Http\Controllers\Company\CompanyProfileController;
 use App\Http\Controllers\Company\InternshipController;
+use App\Http\Controllers\Student\ApplicationController as StudentApplicationController;
+use App\Http\Controllers\Company\ApplicationController as CompanyApplicationController;
 
 // Public Routes
 Route::get('/', fn() => redirect()->route('login'));
@@ -23,6 +25,12 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [AuthController::class, 'logout'])
     ->name('logout')
     ->middleware('auth');
+
+// ─── Public/Student Internship Browsing (accessible to logged-in students) ──
+Route::middleware(['auth', 'active'])->group(function () {
+    Route::get('/internships',      [InternshipController::class, 'index'])->name('internships.index');
+    Route::get('/internships/{id}', [InternshipController::class, 'show'])->name('internships.show');
+});
 
 // Student Routes
 Route::middleware(['auth', 'active', 'student'])
@@ -41,6 +49,10 @@ Route::middleware(['auth', 'active', 'student'])
         Route::post('/skills',                    [StudentSkillController::class, 'store'])->name('skills.store');
         Route::put('/skills/{studentSkillId}',    [StudentSkillController::class, 'update'])->name('skills.update');
         Route::delete('/skills/{studentSkillId}', [StudentSkillController::class, 'destroy'])->name('skills.destroy');
+        Route::get('/applications', [StudentApplicationController::class, 'index'])->name('applications');
+        Route::get('/internships/{internshipId}/apply',  [StudentApplicationController::class, 'create'])->name('applications.create');
+        Route::post('/internships/{internshipId}/apply', [StudentApplicationController::class, 'store'])->name('applications.store');
+        Route::delete('/applications/{applicationId}',   [StudentApplicationController::class, 'destroy'])->name('applications.destroy');
     });
 
 // Company Routes 
@@ -61,6 +73,9 @@ Route::middleware(['auth', 'active', 'company'])
         Route::put('/internships/{id}',             [InternshipController::class, 'update'])->name('internships.update');
         Route::patch('/internships/{id}/status',    [InternshipController::class, 'updateStatus'])->name('internships.status');
         Route::delete('/internships/{id}',          [InternshipController::class, 'destroy'])->name('internships.destroy');
+        Route::get('/applications',         [CompanyApplicationController::class, 'index'])->name('applications');
+        Route::get('/applications/{id}',    [CompanyApplicationController::class, 'show'])->name('applications.show');
+        Route::patch('/applications/{id}/status', [CompanyApplicationController::class, 'updateStatus'])->name('applications.status');
     });
 
 // Admin Routes 
