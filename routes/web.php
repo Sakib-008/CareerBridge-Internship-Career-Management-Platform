@@ -5,6 +5,9 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Student\StudentDashboardController;
 use App\Http\Controllers\Student\StudentProfileController;
 use App\Http\Controllers\Student\StudentSkillController;
+use App\Http\Controllers\Company\CompanyDashboardController;
+use App\Http\Controllers\Company\CompanyProfileController;
+use App\Http\Controllers\Company\InternshipController;
 
 // Public Routes
 Route::get('/', fn() => redirect()->route('login'));
@@ -45,7 +48,19 @@ Route::middleware(['auth', 'active', 'company'])
     ->prefix('company')
     ->name('company.')
     ->group(function () {
-        Route::get('/dashboard', fn() => view('company.dashboard'))->name('dashboard');
+
+        Route::get('/dashboard', [CompanyDashboardController::class, 'index'])->name('dashboard');
+
+        Route::get('/profile', [CompanyProfileController::class, 'show'])->name('profile');
+        Route::put('/profile', [CompanyProfileController::class, 'update'])->name('profile.update');
+
+        Route::get('/internships',                 [InternshipController::class, 'index'])->name('internships');
+        Route::get('/internships/create',           [InternshipController::class, 'create'])->name('internships.create');
+        Route::post('/internships',                 [InternshipController::class, 'store'])->name('internships.store');
+        Route::get('/internships/{id}/edit',        [InternshipController::class, 'edit'])->name('internships.edit');
+        Route::put('/internships/{id}',             [InternshipController::class, 'update'])->name('internships.update');
+        Route::patch('/internships/{id}/status',    [InternshipController::class, 'updateStatus'])->name('internships.status');
+        Route::delete('/internships/{id}',          [InternshipController::class, 'destroy'])->name('internships.destroy');
     });
 
 // Admin Routes 
