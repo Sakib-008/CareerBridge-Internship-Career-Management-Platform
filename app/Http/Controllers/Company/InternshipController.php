@@ -38,7 +38,7 @@ class InternshipController extends Controller
 
         $company = Auth::user()->company;
 
-        DB::transaction(function () use ($validated, $company) {
+        DB::transaction(function () use ($validated, $company, $request) {
             $internship = Internship::create([
                 'COMPANY_ID'            => $company->COMPANY_ID,
                 'TITLE'                 => $validated['title'],
