@@ -38,6 +38,7 @@ class ApplicationController extends Controller
     // ─── Show single application detail ──────────────────────────────────
     public function show($id)
     {
+         \Log::info('ApplicationController@show HIT', ['id' => $id]);
         $company = Auth::user()->company;
         $internshipIds = $company->internships()->get()->pluck('INTERNSHIP_ID')->toArray();
 

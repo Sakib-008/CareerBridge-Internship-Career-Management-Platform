@@ -2,13 +2,14 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
+use App\Http\Controllers\InternshipController as BrowseInternshipController;
 use App\Http\Controllers\Student\StudentDashboardController;
 use App\Http\Controllers\Student\StudentProfileController;
 use App\Http\Controllers\Student\StudentSkillController;
+use App\Http\Controllers\Student\ApplicationController as StudentApplicationController;
 use App\Http\Controllers\Company\CompanyDashboardController;
 use App\Http\Controllers\Company\CompanyProfileController;
-use App\Http\Controllers\Company\InternshipController;
-use App\Http\Controllers\Student\ApplicationController as StudentApplicationController;
+use App\Http\Controllers\Company\InternshipController as CompanyInternshipController;
 use App\Http\Controllers\Company\ApplicationController as CompanyApplicationController;
 
 // Public Routes
@@ -28,8 +29,8 @@ Route::post('/logout', [AuthController::class, 'logout'])
 
 // ─── Public/Student Internship Browsing (accessible to logged-in students) ──
 Route::middleware(['auth', 'active'])->group(function () {
-    Route::get('/internships',      [InternshipController::class, 'index'])->name('internships.index');
-    Route::get('/internships/{id}', [InternshipController::class, 'show'])->name('internships.show');
+    Route::get('/internships',      [BrowseInternshipController::class, 'index'])->name('internships.index');
+    Route::get('/internships/{id}', [BrowseInternshipController::class, 'show'])->name('internships.show');
 });
 
 // Student Routes
@@ -66,13 +67,13 @@ Route::middleware(['auth', 'active', 'company'])
         Route::get('/profile', [CompanyProfileController::class, 'show'])->name('profile');
         Route::put('/profile', [CompanyProfileController::class, 'update'])->name('profile.update');
 
-        Route::get('/internships',                 [InternshipController::class, 'index'])->name('internships');
-        Route::get('/internships/create',           [InternshipController::class, 'create'])->name('internships.create');
-        Route::post('/internships',                 [InternshipController::class, 'store'])->name('internships.store');
-        Route::get('/internships/{id}/edit',        [InternshipController::class, 'edit'])->name('internships.edit');
-        Route::put('/internships/{id}',             [InternshipController::class, 'update'])->name('internships.update');
-        Route::patch('/internships/{id}/status',    [InternshipController::class, 'updateStatus'])->name('internships.status');
-        Route::delete('/internships/{id}',          [InternshipController::class, 'destroy'])->name('internships.destroy');
+        Route::get('/internships',                 [CompanyInternshipController::class, 'index'])->name('internships');
+        Route::get('/internships/create',           [CompanyInternshipController::class, 'create'])->name('internships.create');
+        Route::post('/internships',                 [CompanyInternshipController::class, 'store'])->name('internships.store');
+        Route::get('/internships/{id}/edit',        [CompanyInternshipController::class, 'edit'])->name('internships.edit');
+        Route::put('/internships/{id}',             [CompanyInternshipController::class, 'update'])->name('internships.update');
+        Route::patch('/internships/{id}/status',    [CompanyInternshipController::class, 'updateStatus'])->name('internships.status');
+        Route::delete('/internships/{id}',          [CompanyInternshipController::class, 'destroy'])->name('internships.destroy');
         Route::get('/applications',         [CompanyApplicationController::class, 'index'])->name('applications');
         Route::get('/applications/{id}',    [CompanyApplicationController::class, 'show'])->name('applications.show');
         Route::patch('/applications/{id}/status', [CompanyApplicationController::class, 'updateStatus'])->name('applications.status');

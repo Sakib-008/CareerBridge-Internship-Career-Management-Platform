@@ -10,11 +10,11 @@
    class="nav-link {{ request()->routeIs('student.skills*') ? 'active' : '' }}">
     <i class="bi bi-stars me-2"></i> My Skills
 </a>
-<a href="#"
-   class="nav-link {{ request()->routeIs('internships*') ? 'active' : '' }}">
+<a href="{{ route('internships.index') }}"
+   class="nav-link {{ request()->routeIs('internships.*') ? 'active' : '' }}">
     <i class="bi bi-search me-2"></i> Browse Internships
 </a>
-<a href="#"
+<a href="{{ route('student.applications') }}"
    class="nav-link {{ request()->routeIs('student.applications*') ? 'active' : '' }}">
     <i class="bi bi-file-earmark-text me-2"></i> My Applications
 </a>

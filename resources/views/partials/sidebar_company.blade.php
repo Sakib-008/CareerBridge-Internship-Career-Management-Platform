@@ -10,7 +10,7 @@
    class="nav-link {{ request()->routeIs('company.internships*') ? 'active' : '' }}">
     <i class="bi bi-briefcase me-2"></i> My Internships
 </a>
-<a href="#"
+<a href="{{ route('company.applications') }}"
    class="nav-link {{ request()->routeIs('company.applications*') ? 'active' : '' }}">
     <i class="bi bi-people me-2"></i> Applications
 </a>
