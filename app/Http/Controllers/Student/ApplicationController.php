@@ -3,76 +3,111 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
-use App\Models\Application;
-use App\Models\Internship;
-use App\Models\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class ApplicationController extends Controller
 {
-    // ─── List My Applications ───────────────────────────────────────────
     public function index()
     {
-        $student = Auth::user()->student;
+        $studentId = $this->getStudentId();
 
-        $applications = $student->applications()
-            ->with('internship.company')
-            ->orderBy('APPLIED_AT', 'desc')
-            ->get();
+        $rows = DB::select(
+            "SELECT a.APPLICATION_ID, a.STATUS, a.APPLIED_AT, a.INTERNSHIP_ID,
+                    i.TITLE, c.COMPANY_NAME
+             FROM APPLICATIONS a
+             INNER JOIN INTERNSHIPS i ON a.INTERNSHIP_ID = i.INTERNSHIP_ID
+             INNER JOIN COMPANIES c ON i.COMPANY_ID = c.COMPANY_ID
+             WHERE a.STUDENT_ID = :student_id
+             ORDER BY a.APPLIED_AT DESC",
+            ['student_id' => $studentId]
+        );
 
-        return view('student.applications.index', compact('applications'));
+        $applications = collect(array_map(fn($r) => (object)[
+            'APPLICATION_ID' => $r->application_id,
+            'STATUS'         => $r->status,
+            'APPLIED_AT'     => $r->applied_at,
+            'INTERNSHIP_ID'  => $r->internship_id,
+            'internship' => (object)[
+                'TITLE'        => $r->title,
+                'company' => (object)[
+                    'COMPANY_NAME' => $r->company_name,
+                ],
+            ],
+        ], $rows));
+
+        return view('student.applications.index', ['applications' => collect($applications)]);
     }
 
-    // ─── Show Apply Form ─────────────────────────────────────────────────
     public function create($internshipId)
     {
-        $internship = Internship::with(['company', 'skills'])
-            ->where('INTERNSHIP_ID', $internshipId)
-            ->firstOrFail();
+        $studentId = $this->getStudentId();
 
-        $student = Auth::user()->student;
+        $internshipRow = DB::select(
+            "SELECT i.*, c.COMPANY_NAME
+            FROM INTERNSHIPS i
+            INNER JOIN COMPANIES c ON i.COMPANY_ID = c.COMPANY_ID
+            WHERE i.INTERNSHIP_ID = :internship_id AND ROWNUM = 1",
+            ['internship_id' => $internshipId]
+        );
 
-        // Guard: already applied
-        $alreadyApplied = $student->applications()
-            ->where('INTERNSHIP_ID', $internshipId)
-            ->exists();
+        if (empty($internshipRow)) abort(404);
+        $r = $internshipRow[0];
 
+        // Guards
+        $alreadyApplied = DB::select(
+                "SELECT COUNT(*) AS CNT FROM APPLICATIONS
+                WHERE INTERNSHIP_ID = :internship_id AND STUDENT_ID = :student_id",
+                ['internship_id' => $internshipId, 'student_id' => $studentId]
+            )[0]->cnt > 0;
         if ($alreadyApplied) {
             return redirect()->route('internships.show', $internshipId)
                 ->with('error', 'You have already applied to this internship.');
         }
 
-        // Guard: deadline passed or internship closed
-        if ($internship->STATUS !== 'Open' || $internship->APPLICATION_DEADLINE < now()->format('Y-m-d')) {
+        if ($r->status !== 'Open' || $r->application_deadline < now()->format('Y-m-d')) {
             return redirect()->route('internships.show', $internshipId)
                 ->with('error', 'This internship is no longer accepting applications.');
         }
 
+        $internship = (object)[
+            'INTERNSHIP_ID' => $r->internship_id,
+            'TITLE'         => $r->title,
+            'LOCATION'      => $r->location,
+            'company' => (object)['COMPANY_NAME' => $r->company_name],
+        ];
+
         return view('student.applications.create', compact('internship'));
     }
 
-    // ─── Submit Application ─────────────────────────────────────────────
     public function store(Request $request, $internshipId)
     {
         $validated = $request->validate([
             'cover_letter' => 'nullable|string|max:2000',
         ]);
 
-        $student = Auth::user()->student;
+        $studentId = $this->getStudentId();
 
-        $internship = Internship::where('INTERNSHIP_ID', $internshipId)->firstOrFail();
+        // Re-check guards
+       $internshipRow = DB::select(
+            "SELECT STATUS, APPLICATION_DEADLINE, TITLE, COMPANY_ID
+            FROM INTERNSHIPS WHERE INTERNSHIP_ID = :internship_id AND ROWNUM = 1",
+            ['internship_id' => $internshipId]
+        );
+        if (empty($internshipRow)) abort(404);
+        $i = $internshipRow[0];
 
-        // Re-check guards server-side (defense in depth)
-        if ($internship->STATUS !== 'Open' || $internship->APPLICATION_DEADLINE < now()->format('Y-m-d')) {
+        if ($i->status !== 'Open' || $i->application_deadline < now()->format('Y-m-d')) {
             return redirect()->route('internships.show', $internshipId)
                 ->with('error', 'This internship is no longer accepting applications.');
         }
 
-        $alreadyApplied = $student->applications()
-            ->where('INTERNSHIP_ID', $internshipId)
-            ->exists();
+        $alreadyApplied = DB::select(
+            "SELECT COUNT(*) AS CNT FROM APPLICATIONS
+            WHERE INTERNSHIP_ID = :internship_id AND STUDENT_ID = :student_id",
+            ['internship_id' => $internshipId, 'student_id' => $studentId]
+        )[0]->cnt > 0;
 
         if ($alreadyApplied) {
             return redirect()->route('internships.show', $internshipId)
@@ -80,24 +115,42 @@ class ApplicationController extends Controller
         }
 
         try {
-            DB::transaction(function () use ($student, $internshipId, $validated, $internship) {
-                Application::create([
-                    'INTERNSHIP_ID' => $internshipId,
-                    'STUDENT_ID'    => $student->STUDENT_ID,
-                    'COVER_LETTER'  => $validated['cover_letter'] ?? null,
-                    'STATUS'        => 'Pending',
-                ]);
+            DB::transaction(function () use ($studentId, $internshipId, $validated, $i) {
+                DB::insert(
+                    "INSERT INTO APPLICATIONS (INTERNSHIP_ID, STUDENT_ID, COVER_LETTER, STATUS)
+                     VALUES (:internship_id, :student_id, :cover_letter, 'Pending')",
+                    [
+                        'internship_id' => $internshipId,
+                        'student_id'    => $studentId,
+                        'cover_letter'  => $validated['cover_letter'] ?? null,
+                    ]
+                );
 
-                // Notify the company's user account
-                $companyUserId = $internship->company->USER_ID;
+                // Get company user ID for notification
+                $companyUser = DB::select(
+                    "SELECT u.USER_ID FROM USERS u
+                    INNER JOIN COMPANIES c ON u.USER_ID = c.USER_ID
+                    WHERE c.COMPANY_ID = :company_id AND ROWNUM = 1",
+                    ['company_id' => $i->company_id]
+                );
 
-                Notification::create([
-                    'USER_ID' => $companyUserId,
-                    'MESSAGE' => "New application received for \"{$internship->TITLE}\" from {$student->FIRST_NAME} {$student->LAST_NAME}.",
-                ]);
+                if (!empty($companyUser)) {
+                    $studentName = DB::select(
+                        "SELECT FIRST_NAME || ' ' || LAST_NAME AS FULL_NAME
+                        FROM STUDENTS WHERE STUDENT_ID = :student_id AND ROWNUM = 1",
+                        ['student_id' => $studentId]
+                    )[0]->full_name;
+
+                    DB::insert(
+                        "INSERT INTO NOTIFICATIONS (USER_ID, MESSAGE) VALUES (:user_id, :message)",
+                        [
+                            'user_id' => $companyUser[0]->user_id,
+                            'message' => "New application received for \"{$i->title}\" from {$studentName}.",
+                        ]
+                    );
+                }
             });
-        } catch (\Illuminate\Database\QueryException $e) {
-            // Safety net for the UNIQUE(INTERNSHIP_ID, STUDENT_ID) constraint
+        } catch (\Exception $e) {
             return redirect()->route('internships.show', $internshipId)
                 ->with('error', 'You have already applied to this internship.');
         }
@@ -106,23 +159,39 @@ class ApplicationController extends Controller
             ->with('success', 'Application submitted successfully!');
     }
 
-    // ─── Withdraw Application (only if still Pending) ──────────────────
     public function destroy($applicationId)
     {
-        $student = Auth::user()->student;
+        $studentId = $this->getStudentId();
 
-        $application = $student->applications()
-            ->where('APPLICATION_ID', $applicationId)
-            ->firstOrFail();
+        $rows = DB::select(
+            "SELECT STATUS FROM APPLICATIONS
+            WHERE APPLICATION_ID = :application_id AND STUDENT_ID = :student_id AND ROWNUM = 1",
+            ['application_id' => $applicationId, 'student_id' => $studentId]
+        );
 
-        if ($application->STATUS !== 'Pending') {
+        if (empty($rows)) abort(404);
+
+        if ($rows[0]->status !== 'Pending') {
             return redirect()->route('student.applications')
-                ->with('error', 'You can only withdraw applications that are still Pending.');
+                ->with('error', 'You can only withdraw Pending applications.');
         }
 
-        $application->delete();
+        DB::delete(
+            "DELETE FROM APPLICATIONS
+            WHERE APPLICATION_ID = :application_id AND STUDENT_ID = :student_id",
+            ['application_id' => $applicationId, 'student_id' => $studentId]
+        );
 
         return redirect()->route('student.applications')
             ->with('success', 'Application withdrawn successfully.');
+    }
+
+    private function getStudentId(): int
+    {
+        $row = DB::select(
+            "SELECT STUDENT_ID FROM STUDENTS WHERE USER_ID = :user_id AND ROWNUM = 1",
+            ['user_id' => Auth::id()]
+        );
+        return (int) $row[0]->student_id;
     }
 }

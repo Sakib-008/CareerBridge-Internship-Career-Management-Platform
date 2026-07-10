@@ -14,7 +14,7 @@
    class="nav-link {{ request()->routeIs('company.applications*') ? 'active' : '' }}">
     <i class="bi bi-people me-2"></i> Applications
 </a>
-<a href="#"
+<a href="{{ route('company.interviews.list') }}"
    class="nav-link {{ request()->routeIs('company.interviews*') ? 'active' : '' }}">
     <i class="bi bi-calendar-check me-2"></i> Interviews
 </a>

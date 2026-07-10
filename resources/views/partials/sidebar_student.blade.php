@@ -18,11 +18,11 @@
    class="nav-link {{ request()->routeIs('student.applications*') ? 'active' : '' }}">
     <i class="bi bi-file-earmark-text me-2"></i> My Applications
 </a>
-<a href="#"
+<a href="{{ route('student.interviews') }}"
    class="nav-link {{ request()->routeIs('student.interviews*') ? 'active' : '' }}">
     <i class="bi bi-camera-video me-2"></i> Interviews
 </a>
-<a href="#"
+<a href="{{ route('student.recommendations') }}"
    class="nav-link {{ request()->routeIs('student.recommendations*') ? 'active' : '' }}">
     <i class="bi bi-lightbulb me-2"></i> Recommendations
 </a>

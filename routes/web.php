@@ -11,6 +11,9 @@ use App\Http\Controllers\Company\CompanyDashboardController;
 use App\Http\Controllers\Company\CompanyProfileController;
 use App\Http\Controllers\Company\InternshipController as CompanyInternshipController;
 use App\Http\Controllers\Company\ApplicationController as CompanyApplicationController;
+use App\Http\Controllers\Company\InterviewController as CompanyInterviewController;
+use App\Http\Controllers\Student\InterviewController as StudentInterviewController;
+use App\Http\Controllers\Student\RecommendationController;
 
 // Public Routes
 Route::get('/', fn() => redirect()->route('login'));
@@ -54,6 +57,8 @@ Route::middleware(['auth', 'active', 'student'])
         Route::get('/internships/{internshipId}/apply',  [StudentApplicationController::class, 'create'])->name('applications.create');
         Route::post('/internships/{internshipId}/apply', [StudentApplicationController::class, 'store'])->name('applications.store');
         Route::delete('/applications/{applicationId}',   [StudentApplicationController::class, 'destroy'])->name('applications.destroy');
+        Route::get('/interviews',       [StudentInterviewController::class, 'index'])->name('interviews');
+        Route::get('/recommendations',  [RecommendationController::class, 'index'])->name('recommendations');
     });
 
 // Company Routes 
@@ -77,6 +82,26 @@ Route::middleware(['auth', 'active', 'company'])
         Route::get('/applications',         [CompanyApplicationController::class, 'index'])->name('applications');
         Route::get('/applications/{id}',    [CompanyApplicationController::class, 'show'])->name('applications.show');
         Route::patch('/applications/{id}/status', [CompanyApplicationController::class, 'updateStatus'])->name('applications.status');
+
+                Route::get('/applications/{applicationId}/interview/create',
+            [CompanyInterviewController::class, 'create'])->name('interviews.create');
+        Route::post('/applications/{applicationId}/interview',
+            [CompanyInterviewController::class, 'store'])->name('interviews.store');
+        Route::delete('/applications/{applicationId}/interview',
+            [CompanyInterviewController::class, 'destroy'])->name('interviews.destroy');
+            Route::get('/interviews', function () {
+    $company = Auth::user()->company;
+    $internshipIds = $company->internships()->get()->pluck('INTERNSHIP_ID')->toArray();
+
+    $interviews = \App\Models\Application::with(['student', 'internship', 'interview'])
+        ->whereIn('INTERNSHIP_ID', $internshipIds)
+        ->where('STATUS', 'Interview')
+        ->whereHas('interview')
+        ->orderBy('UPDATED_AT', 'desc')
+        ->get();
+
+    return view('company.interviews.index', compact('interviews'));
+})->name('interviews.list');
     });
 
 // Admin Routes 

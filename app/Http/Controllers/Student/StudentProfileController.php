@@ -5,23 +5,28 @@ namespace App\Http\Controllers\Student;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class StudentProfileController extends Controller
 {
-    // Show Profile (View/Edit Form)
     public function show()
     {
-        $student = Auth::user()->student;
+        $rows = DB::select(
+            "SELECT * FROM STUDENTS WHERE USER_ID = :user_id AND ROWNUM = 1",
+            ['user_id' => Auth::id()]
+        );
+
+        if (empty($rows)) abort(404);
+
+        $s = $rows[0];
+        $student = $this->mapStudent($s);
 
         return view('student.profile', compact('student'));
     }
 
-    // Update Profile Info
     public function update(Request $request)
     {
-        $student = Auth::user()->student;
-
         $validated = $request->validate([
             'first_name'      => 'required|string|max:50',
             'last_name'       => 'required|string|max:50',
@@ -34,56 +39,116 @@ class StudentProfileController extends Controller
             'profile_summary' => 'nullable|string|max:1000',
         ]);
 
-        $student->update([
-            'FIRST_NAME'       => $validated['first_name'],
-            'LAST_NAME'        => $validated['last_name'],
-            'PHONE'            => $validated['phone'] ?? null,
-            'DATE_OF_BIRTH'    => $validated['date_of_birth'] ?? null,
-            'UNIVERSITY'       => $validated['university'],
-            'DEPARTMENT'       => $validated['department'],
-            'GPA'              => $validated['gpa'] ?? null,
-            'GRADUATION_YEAR'  => $validated['graduation_year'] ?? null,
-            'PROFILE_SUMMARY'  => $validated['profile_summary'] ?? null,
-        ]);
+        $studentId = $this->getStudentId();
+
+        DB::update(
+            "UPDATE STUDENTS SET
+                FIRST_NAME      = :first_name,
+                LAST_NAME       = :last_name,
+                PHONE           = :phone,
+                DATE_OF_BIRTH   = :dob,
+                UNIVERSITY      = :university,
+                DEPARTMENT      = :department,
+                GPA             = :gpa,
+                GRADUATION_YEAR = :grad_year,
+                PROFILE_SUMMARY = :summary
+             WHERE STUDENT_ID   = :student_id",
+            [
+                'first_name'  => $validated['first_name'],
+                'last_name'   => $validated['last_name'],
+                'phone'       => $validated['phone'] ?? null,
+                'dob'         => $validated['date_of_birth'] ?? null,
+                'university'  => $validated['university'],
+                'department'  => $validated['department'],
+                'gpa'         => $validated['gpa'] ?? null,
+                'grad_year'   => $validated['graduation_year'] ?? null,
+                'summary'     => $validated['profile_summary'] ?? null,
+                'student_id'  => $studentId,
+            ]
+        );
 
         return redirect()->route('student.profile')
             ->with('success', 'Profile updated successfully.');
     }
 
-    // Upload / Replace CV
     public function uploadCv(Request $request)
     {
         $request->validate([
             'cv_file' => 'required|file|mimes:pdf,doc,docx|max:2048',
         ]);
 
-        $student = Auth::user()->student;
+        $studentId = $this->getStudentId();
 
-        // Delete old CV file if it exists
-        if ($student->CV_FILE_PATH && Storage::disk('public')->exists($student->CV_FILE_PATH)) {
-            Storage::disk('public')->delete($student->CV_FILE_PATH);
+        $rows = DB::select(
+            "SELECT CV_FILE_PATH FROM STUDENTS WHERE STUDENT_ID = :id AND ROWNUM = 1",
+            ['id' => $studentId]
+        );
+
+        $oldPath = $rows[0]->cv_file_path ?? null;
+
+        if ($oldPath && Storage::disk('public')->exists($oldPath)) {
+            Storage::disk('public')->delete($oldPath);
         }
 
         $path = $request->file('cv_file')->store('cvs', 'public');
 
-        $student->update(['CV_FILE_PATH' => $path]);
+        DB::update(
+            "UPDATE STUDENTS SET CV_FILE_PATH = :path WHERE STUDENT_ID = :id",
+            ['path' => $path, 'id' => $studentId]
+        );
 
         return redirect()->route('student.profile')
             ->with('success', 'CV uploaded successfully.');
     }
 
-    // Delete CV
     public function deleteCv()
     {
-        $student = Auth::user()->student;
+        $studentId = $this->getStudentId();
 
-        if ($student->CV_FILE_PATH && Storage::disk('public')->exists($student->CV_FILE_PATH)) {
-            Storage::disk('public')->delete($student->CV_FILE_PATH);
+        $rows = DB::select(
+            "SELECT CV_FILE_PATH FROM STUDENTS WHERE STUDENT_ID = :id AND ROWNUM = 1",
+            ['id' => $studentId]
+        );
+
+        $path = $rows[0]->cv_file_path ?? null;
+
+        if ($path && Storage::disk('public')->exists($path)) {
+            Storage::disk('public')->delete($path);
         }
 
-        $student->update(['CV_FILE_PATH' => null]);
+        DB::update(
+            "UPDATE STUDENTS SET CV_FILE_PATH = NULL WHERE STUDENT_ID = :id",
+            ['id' => $studentId]
+        );
 
         return redirect()->route('student.profile')
             ->with('success', 'CV removed successfully.');
+    }
+
+    // ─── Helpers ──────────────────────────────────────────────────────
+    private function getStudentId(): int
+    {
+        $row = DB::select(
+            "SELECT STUDENT_ID FROM STUDENTS WHERE USER_ID = :user_id AND ROWNUM = 1",
+            ['user_id' => Auth::id()]
+        );
+        return (int) $row[0]->student_id;
+    }
+
+    private function mapStudent(object $s): object
+    {
+        return (object) [
+            'STUDENT_ID'      => $s->student_id,
+            'FIRST_NAME'      => $s->first_name,
+            'LAST_NAME'       => $s->last_name,
+            'PHONE'           => $s->phone,
+            'DATE_OF_BIRTH'   => $s->date_of_birth,
+            'UNIVERSITY'      => $s->university,
+            'DEPARTMENT'      => $s->department,
+            'GPA'             => $s->gpa,
+            'GRADUATION_YEAR' => $s->graduation_year,
+            'CV_FILE_PATH'    => $s->cv_file_path,
+            'PROFILE_SUMMARY' => $s->profile_summary,
+        ];
     }
 }

@@ -22,7 +22,7 @@
                         <label class="form-label small fw-semibold">Skill</label>
                         <select name="skill_id" class="form-select" required>
                             <option value="" disabled selected>Choose a skill...</option>
-                            @foreach($availableSkills->groupBy('CATEGORY') as $category => $skills)
+                            @foreach($groupedSkills as $category => $skills)
                                 <optgroup label="{{ $category }}">
                                     @foreach($skills as $skill)
                                         <option value="{{ $skill->SKILL_ID }}">{{ $skill->SKILL_NAME }}</option>
@@ -74,15 +74,15 @@
                                     <td><span class="badge bg-light text-dark border">{{ $skill->CATEGORY }}</span></td>
                                     <td>
                                         <form method="POST"
-                                              action="{{ route('student.skills.update', $skill->pivot->STUDENT_SKILL_ID) }}"
-                                              class="d-flex align-items-center gap-2">
+                                            action="{{ route('student.skills.update', $skill->STUDENT_SKILL_ID) }}"
+                                            class="d-flex align-items-center gap-2">
                                             @csrf
                                             @method('PUT')
                                             <select name="proficiency" class="form-select form-select-sm"
                                                     onchange="this.form.submit()" style="width: auto;">
                                                 @foreach(['Beginner','Intermediate','Advanced'] as $level)
                                                     <option value="{{ $level }}"
-                                                        {{ $skill->pivot->PROFICIENCY === $level ? 'selected' : '' }}>
+                                                        {{ $skill->PROFICIENCY === $level ? 'selected' : '' }}>
                                                         {{ $level }}
                                                     </option>
                                                 @endforeach
@@ -91,8 +91,8 @@
                                     </td>
                                     <td class="text-end">
                                         <form method="POST"
-                                              action="{{ route('student.skills.destroy', $skill->pivot->STUDENT_SKILL_ID) }}"
-                                              onsubmit="return confirm('Remove this skill?');">
+                                            action="{{ route('student.skills.destroy', $skill->STUDENT_SKILL_ID) }}"
+                                            onsubmit="return confirm('Remove this skill?');">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-sm btn-outline-danger">

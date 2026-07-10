@@ -67,7 +67,7 @@
         <h6 class="fw-bold mb-3"><i class="bi bi-stars me-2"></i>Required Skills</h6>
 
         <div class="row g-2">
-            @foreach($skills->groupBy('CATEGORY') as $category => $categorySkills)
+            @foreach($skills as $category => $categorySkills)
                 <div class="col-12">
                     <small class="text-muted fw-semibold text-uppercase">{{ $category }}</small>
                 </div>

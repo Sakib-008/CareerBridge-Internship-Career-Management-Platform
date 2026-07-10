@@ -66,7 +66,7 @@
         <p class="text-muted small">Select the skills needed for this internship, and check "Mandatory" for must-have skills.</p>
 
         <div class="row g-2">
-            @foreach($skills->groupBy('CATEGORY') as $category => $categorySkills)
+            @foreach($skills as $category => $categorySkills)
                 <div class="col-12">
                     <small class="text-muted fw-semibold text-uppercase">{{ $category }}</small>
                 </div>

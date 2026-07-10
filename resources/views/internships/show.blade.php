@@ -29,9 +29,9 @@
             <h6 class="fw-bold mt-4">Required Skills</h6>
             <div class="d-flex flex-wrap gap-2">
                 @foreach($internship->skills as $skill)
-                    <span class="badge {{ (string)$skill->pivot->IS_MANDATORY === '1' ? 'bg-danger' : 'bg-secondary' }}">
+                    <span class="badge {{ (string)$skill->IS_MANDATORY === '1' ? 'bg-danger' : 'bg-secondary' }}">
                         {{ $skill->SKILL_NAME }}
-                        {{ (string)$skill->pivot->IS_MANDATORY === '1' ? '(Required)' : '(Preferred)' }}
+                        {{ (string)$skill->IS_MANDATORY === '1' ? '(Required)' : '(Preferred)' }}
                     </span>
                 @endforeach
             </div>
