@@ -156,8 +156,8 @@ class InternshipController extends Controller
                 'INDUSTRY'     => $r->industry,
             ],
             'skills' => array_map(fn($s) => (object)[
-                'SKILL_NAME' => $s->skill_name,
-                'pivot'      => (object)['IS_MANDATORY' => $s->is_mandatory],
+                'SKILL_NAME'   => $s->skill_name,
+                'IS_MANDATORY' => $s->is_mandatory,
             ], $skillRows),
         ];
 

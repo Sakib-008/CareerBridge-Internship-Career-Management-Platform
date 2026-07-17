@@ -74,9 +74,14 @@ class InternshipController extends Controller
 
             // Get the newly created internship ID
             $row = DB::select(
-                "SELECT INTERNSHIP_ID FROM INTERNSHIPS
-                 WHERE COMPANY_ID = :company_id
-                 ORDER BY CREATED_AT DESC FETCH FIRST 1 ROWS ONLY",
+                "SELECT *
+                FROM (
+                    SELECT INTERNSHIP_ID
+                    FROM INTERNSHIPS
+                    WHERE COMPANY_ID = :company_id
+                    ORDER BY CREATED_AT DESC
+                )
+                WHERE ROWNUM = 1",
                 ['company_id' => $companyId]
             );
 
@@ -123,7 +128,7 @@ class InternshipController extends Controller
         );
 
         $selectedSkillIds  = array_column($attachedRows, 'skill_id');
-        $mandatorySkillIds = collectarray_map(
+        $mandatorySkillIds = array_map(
             fn($r) => $r->skill_id,
             array_filter($attachedRows, fn($r) => (string)$r->is_mandatory === '1')
         );

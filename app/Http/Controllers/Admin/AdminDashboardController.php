@@ -81,4 +81,30 @@ class AdminDashboardController extends Controller
             'stats', 'recentApplications', 'topInternships'
         ));
     }
+
+     public function regenerateRecommendations()
+    {
+        try {
+            $pdo = DB::getPdo();
+
+            $sql = "BEGIN SP_GENERATE_RECOMMENDATIONS(NULL, :result); END;";
+            $stmt = $pdo->prepare($sql);
+
+            $result = '';
+            $stmt->bindParam(':result', $result, \PDO::PARAM_STR | \PDO::PARAM_INPUT_OUTPUT, 500);
+            $stmt->execute();
+
+            if (str_starts_with($result, 'ERROR')) {
+                return redirect()->route('admin.dashboard')
+                    ->with('error', $result);
+            }
+
+            return redirect()->route('admin.dashboard')
+                ->with('success', 'Recommendations regenerated: ' . $result);
+
+        } catch (\Exception $e) {
+            return redirect()->route('admin.dashboard')
+                ->with('error', 'Failed: ' . $e->getMessage());
+        }
+    }
 }

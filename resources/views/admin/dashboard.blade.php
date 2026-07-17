@@ -53,6 +53,22 @@
     </div>
 </div>
 
+<div class="card p-3 mb-4 d-flex flex-row align-items-center justify-content-between">
+    <div>
+        <h6 class="fw-bold mb-0">Recommendation Engine</h6>
+        <small class="text-muted">
+            Calls <code>SP_GENERATE_RECOMMENDATIONS</code> — regenerates skill-match
+            scores for all students.
+        </small>
+    </div>
+    <form method="POST" action="{{ route('admin.recommendations.regenerate') }}">
+        @csrf
+        <button type="submit" class="btn btn-outline-primary">
+            <i class="bi bi-arrow-repeat"></i> Regenerate All Recommendations
+        </button>
+    </form>
+</div>
+
 <div class="row g-4 mb-4">
     <div class="col-md-3">
         <div class="card p-3 text-center">

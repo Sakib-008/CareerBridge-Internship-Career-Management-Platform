@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'company' => \App\Http\Middleware\CheckCompany::class,
             'admin'   => \App\Http\Middleware\CheckAdmin::class,
             'active'  => \App\Http\Middleware\CheckActive::class,
+            'prevent_back'  => \App\Http\Middleware\PreventBackHistory::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

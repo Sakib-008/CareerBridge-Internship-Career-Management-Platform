@@ -47,9 +47,12 @@ class AuthController extends Controller
                 ->withErrors(['email' => 'Your account has been deactivated. Contact admin.']);
         }
 
-        // Load into Eloquent User for Auth::login() compatibility
         $user = \App\Models\User::find($row->user_id);
         Auth::login($user, $request->boolean('remember'));
+
+        // Clear any accumulated session data that bloats the cookie
+        session()->forget(['errors', '_old_input', '_flash']);
+        session()->regenerate();
 
         return $this->redirectByRole($row->role);
     }

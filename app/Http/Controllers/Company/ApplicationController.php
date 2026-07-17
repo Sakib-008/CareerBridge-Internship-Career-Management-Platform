@@ -141,7 +141,7 @@ class ApplicationController extends Controller
 
         return view('company.applications.show', compact('application'));
     }
-
+    
     public function updateStatus(Request $request, $id)
     {
         $request->validate([
@@ -150,35 +150,55 @@ class ApplicationController extends Controller
 
         $companyId = $this->getCompanyId();
 
-        // Verify ownership
+        // Verify this application belongs to this company
         $check = DB::select(
-            "SELECT a.APPLICATION_ID, s.USER_ID AS STUDENT_USER_ID, i.TITLE
+            "SELECT a.APPLICATION_ID, i.TITLE
             FROM APPLICATIONS a
-            INNER JOIN STUDENTS s ON a.STUDENT_ID = s.STUDENT_ID
             INNER JOIN INTERNSHIPS i ON a.INTERNSHIP_ID = i.INTERNSHIP_ID
-            WHERE a.APPLICATION_ID = :application_id AND i.COMPANY_ID = :company_id AND ROWNUM = 1",
+            WHERE a.APPLICATION_ID = :application_id
+            AND i.COMPANY_ID = :company_id AND ROWNUM = 1",
             ['application_id' => $id, 'company_id' => $companyId]
         );
 
-
         if (empty($check)) abort(404);
 
-        DB::update(
-            "UPDATE APPLICATIONS SET STATUS = :status WHERE APPLICATION_ID = :application_id",
-            ['status' => $request->status, 'application_id' => $id]
-        );
+        // Call the stored procedure via PDO
+        try {
+            $pdo = DB::getPdo();
 
-        DB::insert(
-            "INSERT INTO NOTIFICATIONS (USER_ID, MESSAGE) VALUES (:user_id, :message)",
-            [
-                'user_id' => $check[0]->student_user_id,
-                'message' => "Your application for \"{$check[0]->title}\" is now: {$request->status}.",
-            ]
-        );
+            $sql = "BEGIN SP_UPDATE_APPLICATION_STATUS(
+                        :application_id,
+                        :new_status,
+                        :changed_by,
+                        :result
+                    ); END;";
 
-        return redirect()->back()->with('success', "Status updated to {$request->status}.");
+            $stmt = $pdo->prepare($sql);
+
+            $applicationId = (int) $id;
+            $newStatus     = $request->status;
+            $changedBy     = (int) Auth::id();
+            $result        = '';
+
+            $stmt->bindParam(':application_id', $applicationId, \PDO::PARAM_INT);
+            $stmt->bindParam(':new_status',     $newStatus,     \PDO::PARAM_STR);
+            $stmt->bindParam(':changed_by',     $changedBy,     \PDO::PARAM_INT);
+            $stmt->bindParam(':result',         $result,        \PDO::PARAM_STR | \PDO::PARAM_INPUT_OUTPUT, 200);
+
+            $stmt->execute();
+
+            if (str_starts_with($result, 'ERROR')) {
+                return redirect()->back()->with('error', $result);
+            }
+
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Failed to update status: ' . $e->getMessage());
+        }
+
+        return redirect()->back()
+            ->with('success', "Application status updated to {$request->status}.");
     }
-
     private function getCompanyId(): int
     {
         $row = DB::select(

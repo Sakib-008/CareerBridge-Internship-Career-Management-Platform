@@ -130,4 +130,14 @@ class RecommendationController extends Controller
         );
         return (int) $row[0]->student_id;
     }
+
+    private function getMatchScoreFromDb(int $studentId, int $internshipId): float
+    {
+        $result = DB::select(
+            "SELECT FN_GET_MATCH_SCORE(:student_id, :internship_id) AS SCORE FROM DUAL",
+            ['student_id' => $studentId, 'internship_id' => $internshipId]
+        );
+
+        return (float) ($result[0]->score ?? 0);
+    }
 }
