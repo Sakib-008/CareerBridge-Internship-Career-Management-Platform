@@ -14,6 +14,11 @@ use App\Http\Controllers\Company\ApplicationController as CompanyApplicationCont
 use App\Http\Controllers\Company\InterviewController as CompanyInterviewController;
 use App\Http\Controllers\Student\InterviewController as StudentInterviewController;
 use App\Http\Controllers\Student\RecommendationController;
+use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\AdminUserController;
+use App\Http\Controllers\Admin\AdminReportController;
+use App\Http\Controllers\Admin\AdminSkillController;
+
 
 // Public Routes
 Route::get('/', fn() => redirect()->route('login'));
@@ -104,10 +109,33 @@ Route::middleware(['auth', 'active', 'company'])
 })->name('interviews.list');
     });
 
-// Admin Routes 
+// ─── Admin Routes ──────────────────────────────────────────────────────────
 Route::middleware(['auth', 'active', 'admin'])
     ->prefix('admin')
     ->name('admin.')
     ->group(function () {
-        Route::get('/dashboard', fn() => view('admin.dashboard'))->name('dashboard');
+
+        Route::get('/dashboard', [AdminDashboardController::class, 'index'])
+            ->name('dashboard');
+
+        // User management
+        Route::get('/users', [AdminUserController::class, 'index'])->name('users');
+        Route::patch('/users/{userId}/toggle', [AdminUserController::class, 'toggleActive'])
+            ->name('users.toggle');
+
+        // Reports
+        Route::get('/reports/applications', [AdminReportController::class, 'applicationSummary'])
+            ->name('reports.applications');
+        Route::get('/reports/placement', [AdminReportController::class, 'studentPlacement'])
+            ->name('reports.placement');
+        Route::get('/reports/skills', [AdminReportController::class, 'skillDemand'])
+            ->name('reports.skills');
+        Route::get('/reports/companies', [AdminReportController::class, 'companyActivity'])
+            ->name('reports.companies');
+
+        // Skill catalog
+        Route::get('/skills',    [AdminSkillController::class, 'index'])->name('skills');
+        Route::post('/skills',   [AdminSkillController::class, 'store'])->name('skills.store');
+        Route::delete('/skills/{skillId}', [AdminSkillController::class, 'destroy'])
+            ->name('skills.destroy');
     });
